@@ -15,7 +15,9 @@ public class Thor implements Runnable {
         log.info("Started Thor...");
         try (ZContext context = new ZContext()) {
             ZMQ.Socket responder = context.createSocket(SocketType.REP);
-            responder.connect("tcp://0.0.0.0:5560");
+            log.info("Connecting to queue now...");
+            boolean didConnect = responder.connect("tcp://queue:5560");
+            log.info("Did I connect (Thor): " + didConnect);
 
             while (!Thread.currentThread().isInterrupted()) {
                 //  Wait for next request from client
