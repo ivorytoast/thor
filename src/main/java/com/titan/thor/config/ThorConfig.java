@@ -1,6 +1,7 @@
 package com.titan.thor.config;
 
 import com.titan.thor.Thor;
+import com.titan.thor.database.Wanda;
 import lombok.extern.java.Log;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -12,9 +13,14 @@ import org.springframework.core.task.TaskExecutor;
 public class ThorConfig {
 
     @Bean
-    public CommandLineRunner bifrostRunner(TaskExecutor executor) {
-        log.info("Starting Thor");
-        return args -> executor.execute(new Thor());
+    public Thor thor(Wanda wanda) {
+        return new Thor(wanda);
+    }
+
+    @Bean
+    public CommandLineRunner thorRunner(TaskExecutor executor, Wanda wanda) {
+        log.info("Starting Thor -- Testing :)");
+        return args -> executor.execute(thor(wanda));
     }
 
 }

@@ -1,0 +1,53 @@
+version: '3.3'
+
+services:
+  loki:
+    restart: always
+    image: ivorytoast3853/loki:1.5
+    ports:
+      - "8084:8084"
+
+  bifrost:
+    restart: always
+    image: ivorytoast3853/bifrost
+
+  thor:
+    restart: always
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db2:3306/titan?createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: gt
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+  redis:
+    image: "redis:alpine"
+    ports:
+      - "6379:6379"
+
+  db:
+    image: mysql:latest
+    container_name: mysql-db2
+    environment:
+      - MYSQL_ROOT_PASSWORD=gt
+    ports:
+      - "3306:3306"
+    restart: always
+    volumes:
+      - thor_data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: my-php-myadmin
+    ports:
+      - "8082:80"
+    depends_on:
+      - db
+    restart: always
+    environment:
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: gt
+
+volumes:
+  thor_data:
