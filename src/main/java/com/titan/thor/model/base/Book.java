@@ -10,9 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Log
 public abstract class Book {
 
-    @Autowired
-    public Wanda wanda;
-
     public BookType bookType;
 
     public Tesseract tesseract;

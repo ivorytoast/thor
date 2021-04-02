@@ -17,15 +17,30 @@ public class Wanda {
 
     public Wanda() {}
 
-    public boolean save(Order order) {
+    public long addOrderToDatabase(Order order) {
         OrderDAO orderDAO = new OrderDAO();
         try {
             Converter.viewToDataModelConverter(order, orderDAO);
-            orderRepository.save(orderDAO);
-            return true;
+            OrderDAO createdOrder = orderRepository.save(orderDAO);
+            return createdOrder.getId();
         } catch (Exception e) {
-            return false;
+            return -1;
         }
+    }
+
+    public OrderDAO getOneOrderFromDatabase(long orderID) {
+        try {
+            return orderRepository.getOne(orderID);
+        }
+        catch (Exception e) {
+            log.info("Something went wrong!");
+            log.severe(e.toString());
+            return null;
+        }
+    }
+
+    public void updateOrderInDatabase(OrderDAO orderDAO) {
+        orderRepository.save(orderDAO);
     }
 
 }

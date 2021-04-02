@@ -1,9 +1,11 @@
 package com.titan.thor;
 
+import com.titan.thor.database.Wanda;
 import com.titan.thor.model.Order;
 import com.titan.thor.model.base.Book;
 import com.titan.thor.model.children.MatchOutput;
 import com.titan.thor.model.children.Symbol;
+import com.titan.thor.model.dao.OrderDAO;
 import lombok.extern.java.Log;
 
 import java.util.*;
@@ -13,9 +15,11 @@ public class Engine {
 
     boolean debug = true;
 
+    Wanda wanda;
     Map<String, Symbol> symbols;
 
-    public Engine() {
+    public Engine(Wanda wanda) {
+        this.wanda = wanda;
         symbols = new HashMap<>();
     }
 
@@ -69,13 +73,13 @@ public class Engine {
 
             if (matchOutput.isFullyMatch()) {
                 if (debug) System.out.println("The buy order was fully matched!");
-                symbol.asks.removeOrder(matchOutput.getModifiedOrder().getId());
+                symbol.asks.removeOrder(matchedIncomingOrder.getId());
             } else {
                 if (debug) System.out.println("The buy order was partially matched!");
-                symbol.asks.updateOrder(matchOutput.getModifiedOrder(), originalQuantity - order.getQuantityRemaining());
+                symbol.asks.updateOrder(matchedIncomingOrder, originalQuantity - order.getQuantityRemaining());
             }
 
-            allAffectedOrders.add(matchOutput.getModifiedOrder());
+            allAffectedOrders.add(matchedIncomingOrder);
 
             // Remove/Update Existing Orders
             for (long orderID : matchOutput.getExistingOrdersToRemove()) {
@@ -151,24 +155,20 @@ public class Engine {
         }
     }
 
-    public void updateOrder(Order order) {
-        /*
-        TODO: Doing the whole thing...
-         */
-    }
-
-    public Order convertFixToOrder(String fix) {
-        /*
-        TODO: All of it
-         */
-        return null;
-    }
-
-    public String convertOrderToFix(Order order) {
-        /*
-        TODO: All of it
-         */
-        return "";
+    public String updateOrder(Order order) {
+        log.info("Searching for this orderID in the database: " + order.getId());
+        OrderDAO orderDAO = wanda.getOneOrderFromDatabase(order.getId());
+        if (orderDAO == null) {
+            return "Could not update order for OrderID of: " + order.getId();
+        }
+        log.info("Database data: " + orderDAO.toString());
+        orderDAO.setQuantity(order.getQuantity());
+        orderDAO.setSymbol(order.getSymbol());
+        orderDAO.setPrice(order.getPrice());
+        orderDAO.setQuantityRemaining(order.getQuantityRemaining());
+        log.info("Updated order data: " + orderDAO.toString());
+        wanda.updateOrderInDatabase(orderDAO);
+        return "Updated order!";
     }
 
 }

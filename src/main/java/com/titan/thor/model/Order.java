@@ -51,6 +51,16 @@ public class Order {
         this.quantityRemaining = quantity;
     }
 
+    public Order(Long id, String userID, String symbol, Long quantity, Double price, String side, Long quantityRemaining) {
+        this.id = id;
+        this.userID = userID;
+        this.symbol = symbol;
+        this.quantity = quantity;
+        this.price = price;
+        this.side = side;
+        this.quantityRemaining = quantityRemaining;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
