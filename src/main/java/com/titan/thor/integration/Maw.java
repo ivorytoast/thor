@@ -1,11 +1,11 @@
 package com.titan.thor.integration;
 
+import com.titan.thor.Thor;
+import com.titan.thor.database.Wanda;
 import com.titan.thor.integration.tesseract.TesseractTests;
+import com.titan.thor.model.MawOrder;
 import lombok.extern.java.Log;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Log
 @CrossOrigin
@@ -14,8 +14,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class Maw {
 
     private final TesseractTests tesseractTests;
+    private Thor thor;
 
-    public Maw(TesseractTests tesseractTests) {
+    public Maw(Thor thor, TesseractTests tesseractTests) {
+        this.thor = thor;
         this.tesseractTests = tesseractTests;
     }
 
@@ -27,6 +29,11 @@ public class Maw {
     @GetMapping("/v1/run/tesseract/quantity")
     public String quantityTest() {
         return tesseractTests.quantity_Test();
+    }
+
+    @PostMapping("/v1/submit")
+    public void submitRequest(@RequestBody MawOrder fixMessage) {
+        thor.mawSubmit(fixMessage);
     }
 
 

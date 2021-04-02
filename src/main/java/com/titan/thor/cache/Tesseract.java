@@ -18,28 +18,24 @@ public class Tesseract implements InfinityStone {
     private final Jedis jedis;
 
     // These 4 must always be affected together
-    private double amountAvailable;
-    private TreeMap<Double, Long> numberOfSharesPerPrice;
-    private Map<Double, Map<Long, Order>> ordersGroupedByPrice;
-    private Map<Long, Order> cache;
+//    private double amountAvailable;
+//    private TreeMap<Double, Long> numberOfSharesPerPrice;
+//    private Map<Double, Map<Long, Order>> ordersGroupedByPrice;
+//    private Map<Long, Order> cache;
 
     // This one may not
-    private List<Order> completedOrders;
+//    private List<Order> completedOrders;
 
+    /**
+     * TODO: Have to make number of shares per price a sorted set in REDIS so I can actually get the best prices
+     */
     public Tesseract(BookType bookType, String underlier) {
         this.underlier = underlier;
 
-        this.amountAvailable = 0;
-        this.ordersGroupedByPrice = new HashMap<>();
-        this.completedOrders = new ArrayList<>();
-        this.cache = new HashMap<>();
-
         if (bookType == BookType.BID) {
             this.bookType = "bids";
-            this.numberOfSharesPerPrice = new TreeMap<>(Collections.reverseOrder());
         } else {
             this.bookType = "asks";
-            this.numberOfSharesPerPrice = new TreeMap<>();
         }
 
         jedis = new Jedis("redis");
@@ -208,8 +204,8 @@ public class Tesseract implements InfinityStone {
         return new Order(id, values.get("userID"), values.get("symbol"), quantity, price, values.get("side"), quantityRemaining);
     }
 
-    public double getAmountAvailable() {
-        return amountAvailable;
+    public long getAmountAvailable() {
+        return Long.parseLong(jedis.get(generateAmountAvailableKey()));
     }
 
     public String getUnderlier() {
@@ -226,42 +222,6 @@ public class Tesseract implements InfinityStone {
 
     public void setBookType(String bookType) {
         this.bookType = bookType;
-    }
-
-    public void setAmountAvailable(double amountAvailable) {
-        this.amountAvailable = amountAvailable;
-    }
-
-    public TreeMap<Double, Long> getNumberOfSharesPerPrice() {
-        return numberOfSharesPerPrice;
-    }
-
-    public void setNumberOfSharesPerPrice(TreeMap<Double, Long> numberOfSharesPerPrice) {
-        this.numberOfSharesPerPrice = numberOfSharesPerPrice;
-    }
-
-    public Map<Double, Map<Long, Order>> getOrdersGroupedByPrice() {
-        return ordersGroupedByPrice;
-    }
-
-    public void setOrdersGroupedByPrice(Map<Double, Map<Long, Order>> ordersGroupedByPrice) {
-        this.ordersGroupedByPrice = ordersGroupedByPrice;
-    }
-
-    public Map<Long, Order> getCache() {
-        return cache;
-    }
-
-    public void setCache(Map<Long, Order> cache) {
-        this.cache = cache;
-    }
-
-    public List<Order> getCompletedOrders() {
-        return completedOrders;
-    }
-
-    public void setCompletedOrders(List<Order> completedOrders) {
-        this.completedOrders = completedOrders;
     }
 
 }

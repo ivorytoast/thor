@@ -96,6 +96,9 @@ public class Engine {
         return allAffectedOrders;
     }
 
+    /*
+    TODO: Fix this method -- implement the redis equivalent to these. Probably sorted sets
+     */
     private MatchOutput matchOrder(Order incomingOrder, Book book) {
         Set<Double> bestPricesToFillWith = findTheBestPricesToFillWith(incomingOrder, book);
         Set<Long> existingOrdersToRemove = new HashSet<>();
