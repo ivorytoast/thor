@@ -10,6 +10,7 @@ public class Order {
     private Double price;
     private String side;
     private Long quantityRemaining;
+    private Boolean isCancelled;
 
     public Long getId() {
         return id;
@@ -24,6 +25,9 @@ public class Order {
     public Double getPrice() { return price; }
     public String getSide() { return side; }
     public Long getQuantityRemaining() { return quantityRemaining; }
+    public Boolean getCancelled() {
+        return isCancelled;
+    }
 
     public void setId(Long id) {
         this.id = id;
@@ -39,6 +43,10 @@ public class Order {
     public void setSide(String side) { this.side = side; }
     public void setQuantityRemaining(Long quantityRemaining) { this.quantityRemaining = quantityRemaining; }
 
+    public void setCancelled(Boolean cancelled) {
+        isCancelled = cancelled;
+    }
+
     public Order() {}
 
     public Order(Long id, String userID, String symbol, Long quantity, Double price, String side) {
@@ -49,6 +57,7 @@ public class Order {
         this.price = price;
         this.side = side;
         this.quantityRemaining = quantity;
+        this.isCancelled = false;
     }
 
     public Order(Long id, String userID, String symbol, Long quantity, Double price, String side, Long quantityRemaining) {
@@ -59,6 +68,7 @@ public class Order {
         this.price = price;
         this.side = side;
         this.quantityRemaining = quantityRemaining;
+        this.isCancelled = false;
     }
 
     @Override
@@ -78,7 +88,8 @@ public class Order {
     public String toString() {
         return "OrderView [id=" + this.id + ", userID=" + this.userID + ", symbol=" + this.symbol +
                 ", quantity=" + this.quantity + ", price=" + this.price +
-                ", side=" + this.side + ", remaining quantity=" + this.quantityRemaining + "]";
+                ", side=" + this.side + ", isCancelled=" + this.isCancelled + ", remaining quantity=" +
+                this.quantityRemaining + "]";
     }
 
 }

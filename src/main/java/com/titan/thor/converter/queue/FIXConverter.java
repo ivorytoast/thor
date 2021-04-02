@@ -14,11 +14,18 @@ public class FIXConverter {
         return new Order(null, userID, symbol, Long.parseLong(quantity), Double.parseDouble(price), side);
     }
 
-    public String convertOrderToFix(Order order) {
-        /*
-        TODO: All of it
-         */
-        return "";
+    public static String convertOrderToFix(Order order) {
+        return "8=FIX"
+                + "?1="
+                + order.getUserID()
+                + "?2="
+                + order.getSymbol()
+                + "?3="
+                + order.getQuantityRemaining()
+                + "?4="
+                + order.getPrice()
+                + "?5="
+                + order.getSide();
     }
 
 }

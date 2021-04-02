@@ -23,6 +23,38 @@ public class Engine {
         symbols = new HashMap<>();
     }
 
+    /*
+    TODO: Make symbols a set in REDIS
+     */
+    public void addNewOrder(Order order) {
+        // This will be ported over to REDIS soon...
+        Symbol symbol = new Symbol(order.getSymbol());
+
+        if (order.getSide().equals("buy")) {
+            symbol.bids.addOrder(order);
+        } else {
+            symbol.asks.addOrder(order);
+        }
+
+        log.info("Added " + order.toString() + " to REDIS");
+    }
+
+    /*
+    TODO: Make it so for cancels it does not adjust quantity to 0 since it technically hasn't matched
+     */
+    public void cancelOrder(Order order) {
+        // This will be ported over to REDIS soon...
+        Symbol symbol = new Symbol(order.getSymbol());
+
+        if (order.getSide().equals("buy")) {
+            symbol.bids.removeOrder(order.getId());
+        } else {
+            symbol.asks.removeOrder(order.getId());
+        }
+
+        log.info("Cancelled " + order.getId() + " in REDIS");
+    }
+
     public List<Order> acceptOrder(Order order) {
         List<Order> allAffectedOrders = new ArrayList<>();
 
@@ -104,7 +136,7 @@ public class Engine {
         Set<Long> existingOrdersToRemove = new HashSet<>();
         Set<Long> existingOrdersToUpdate = new HashSet<>();
         for (double price : bestPricesToFillWith) {
-            for (Order existingOrder : book.tesseract.getOrdersGroupedByPrice().get(price).values()) {
+            for (Order existingOrder : new ArrayList<Order>()) {
                 if (incomingOrder.getQuantity() == 0) {
                     break;
                 }
@@ -138,17 +170,17 @@ public class Engine {
         } else {
             long toBeFilled = order.getQuantity();
             Set<Double> prices = new HashSet<>();
-            for (Map.Entry<Double, Long> entry : book.tesseract.getNumberOfSharesPerPrice().entrySet()) {
-                if (toBeFilled == 0) return prices;
-                if (entry.getValue() > 0) {
-                    if (toBeFilled <= entry.getValue()) {
-                        toBeFilled = 0;
-                    } else {
-                        toBeFilled -= entry.getValue();
-                    }
-                    prices.add(entry.getKey());
-                }
-            }
+//            for (Map.Entry<Double, Long> entry : book.tesseract.getNumberOfSharesPerPrice().entrySet()) {
+//                if (toBeFilled == 0) return prices;
+//                if (entry.getValue() > 0) {
+//                    if (toBeFilled <= entry.getValue()) {
+//                        toBeFilled = 0;
+//                    } else {
+//                        toBeFilled -= entry.getValue();
+//                    }
+//                    prices.add(entry.getKey());
+//                }
+//            }
             long end = System.nanoTime();
             double seconds = (double) (end - start) / 1_000_000_000.0;
             if (order.getId() > 999_999 && order.getId() % 100_000 == 0) {

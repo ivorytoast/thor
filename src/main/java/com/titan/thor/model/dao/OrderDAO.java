@@ -38,6 +38,10 @@ public class OrderDAO {
     @Column(name = "QUANTITY_REMAINING")
     private Long quantityRemaining;
 
+    @NotNull
+    @Column(name = "IS_CANCELLED_IND")
+    private boolean isCancelled;
+
     public Long getId() {
         return id;
     }
@@ -51,6 +55,9 @@ public class OrderDAO {
     public Double getPrice() { return price; }
     public String getSide() { return side; }
     public Long getQuantityRemaining() { return quantityRemaining; }
+    public boolean isCancelled() {
+        return isCancelled;
+    }
 
     public void setId(Long id) {
         this.id = id;
@@ -65,6 +72,9 @@ public class OrderDAO {
     public void setPrice(Double price) { this.price = price; }
     public void setSide(String side) { this.side = side; }
     public void setQuantityRemaining(Long quantityRemaining) { this.quantityRemaining = quantityRemaining; }
+    public void setCancelled(boolean cancelled) {
+        isCancelled = cancelled;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -73,12 +83,13 @@ public class OrderDAO {
         OrderDAO orderData = (OrderDAO) o;
         return Objects.equals(id, orderData.id) && Objects.equals(userID, orderData.userID) && Objects.equals(symbol, orderData.symbol)
                 && Objects.equals(quantity, orderData.quantity) && Objects.equals(price, orderData.price)
-                && Objects.equals(side, orderData.side) && Objects.equals(quantityRemaining, orderData.quantityRemaining);
+                && Objects.equals(side, orderData.side) && Objects.equals(quantityRemaining, orderData.quantityRemaining)
+                && Objects.equals(isCancelled, orderData.isCancelled);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, userID, symbol, quantity, price, side, quantityRemaining);
+        return Objects.hash(id, userID, symbol, quantity, price, side, quantityRemaining, isCancelled);
     }
 
     public OrderDAO() {}
@@ -90,6 +101,7 @@ public class OrderDAO {
         this.price = price;
         this.side = side;
         this.quantityRemaining = quantityRemaining;
+        this.isCancelled = false;
     }
 
     public OrderDAO(@NotNull Long id, @NotNull String userID, @NotNull String symbol, @NotNull Long quantity, @NotNull Double price, @NotNull String side, @NotNull Long quantityRemaining) {
@@ -100,12 +112,13 @@ public class OrderDAO {
         this.price = price;
         this.side = side;
         this.quantityRemaining = quantityRemaining;
+        this.isCancelled = false;
     }
 
     @Override
     public String toString() {
         return "Order [id=" + this.id + ", userID=" + this.userID + ", symbol=" + this.symbol +
-                ", quantity=" + this.quantity + ", price=" + this.price +
+                ", quantity=" + this.quantity + ", isCancelled=" + this.isCancelled + ", price=" + this.price +
                 ", side=" + this.side + ", quantity remaining=" + this.quantityRemaining + "]";
     }
 

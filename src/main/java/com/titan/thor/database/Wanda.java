@@ -39,6 +39,12 @@ public class Wanda {
         }
     }
 
+    public void cancelOrder(long orderID) {
+        OrderDAO order = getOneOrderFromDatabase(orderID);
+        order.setCancelled(true);
+        updateOrderInDatabase(order);
+    }
+
     public void updateOrderInDatabase(OrderDAO orderDAO) {
         orderRepository.save(orderDAO);
     }

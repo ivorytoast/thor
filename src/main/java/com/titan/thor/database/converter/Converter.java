@@ -15,5 +15,15 @@ public class Converter {
         databaseOrder.setQuantityRemaining(order.getQuantityRemaining());
     }
 
+    public static void createNewOrderFromDAO(Order order, OrderDAO databaseOrder) {
+        order.setUserID(databaseOrder.getUserID());
+        order.setId(databaseOrder.getId());
+        order.setSymbol(databaseOrder.getSymbol());
+        order.setQuantity(databaseOrder.getQuantity());
+        order.setPrice(databaseOrder.getPrice());
+        order.setSide(databaseOrder.getSide());
+        order.setQuantityRemaining(databaseOrder.getQuantityRemaining());
+        order.setCancelled(databaseOrder.isCancelled());
+    }
 
 }

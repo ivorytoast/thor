@@ -2,10 +2,14 @@ package com.titan.thor;
 
 import com.titan.thor.converter.queue.FIXConverter;
 import com.titan.thor.database.Wanda;
-import com.titan.thor.model.MawOrder;
+import com.titan.thor.database.converter.Converter;
+import com.titan.thor.model.MawCancel;
+import com.titan.thor.model.MawNew;
 import com.titan.thor.model.Order;
 import com.titan.thor.model.children.Symbol;
+import com.titan.thor.model.dao.OrderDAO;
 import lombok.extern.java.Log;
+import org.aspectj.weaver.ast.Or;
 import org.springframework.transaction.annotation.Transactional;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
@@ -31,24 +35,31 @@ public class Thor implements Runnable {
         symbols.put("spx", new Symbol("spx"));
     }
 
-    public void mawSubmit(MawOrder mawOrder) {
-        String fixMessage = mawOrder.getFixMessage();
-        log.info("Received message from Maw: " + fixMessage);
+    public void mawNew(MawNew mawNew) {
+        String fixMessage = mawNew.getFixMessage();
+        log.info("Received new order request from Maw: " + fixMessage);
 
-        // Convert from FIX to POJO, save to database, and enrich with new ID
         Order order = FIXConverter.convertFixToOrder(fixMessage);
         long createdID = this.wanda.addOrderToDatabase(order);
         order.setId(createdID);
         log.info("Order being sent down to the engine: " + order.toString());
 
-        List<Order> ordersToUpdate = engine.acceptOrder(order);
+        engine.addNewOrder(order);
 
-        for (Order orderToUpdate : ordersToUpdate) {
-            log.info("Affected order: " + orderToUpdate.toString());
-            log.info(engine.updateOrder(orderToUpdate));
-        }
+        log.info("Order getting sent back to Maw: " + FIXConverter.convertOrderToFix(order));
+    }
 
-        log.info("Order getting sent back to Maw: " + order.toString());
+    public void mawCancel(MawCancel mawCancel) {
+        long orderID = mawCancel.getOrderID();
+        log.info("Received new cancel request from Maw for orderID: " + orderID);
+        OrderDAO orderDAO = wanda.getOneOrderFromDatabase(orderID);
+        Order order = new Order();
+        Converter.createNewOrderFromDAO(order, orderDAO);
+
+        wanda.cancelOrder(orderID);
+        engine.cancelOrder(order);
+
+        log.info("OrderID " + orderID + "cancelled");
     }
 
     @Override

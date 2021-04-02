@@ -1,11 +1,9 @@
 package com.titan.thor.model.base;
 
 import com.titan.thor.cache.Tesseract;
-import com.titan.thor.database.Wanda;
 import com.titan.thor.model.Order;
 import com.titan.thor.model.enums.BookType;
 import lombok.extern.java.Log;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @Log
 public abstract class Book {

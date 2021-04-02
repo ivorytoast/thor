@@ -1,9 +1,9 @@
 package com.titan.thor.integration;
 
 import com.titan.thor.Thor;
-import com.titan.thor.database.Wanda;
 import com.titan.thor.integration.tesseract.TesseractTests;
-import com.titan.thor.model.MawOrder;
+import com.titan.thor.model.MawCancel;
+import com.titan.thor.model.MawNew;
 import lombok.extern.java.Log;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 public class Maw {
 
     private final TesseractTests tesseractTests;
-    private Thor thor;
+    private final Thor thor;
 
     public Maw(Thor thor, TesseractTests tesseractTests) {
         this.thor = thor;
@@ -31,10 +31,14 @@ public class Maw {
         return tesseractTests.quantity_Test();
     }
 
-    @PostMapping("/v1/submit")
-    public void submitRequest(@RequestBody MawOrder fixMessage) {
-        thor.mawSubmit(fixMessage);
+    @PostMapping("/v1/submit/new")
+    public void newRequest(@RequestBody MawNew newRequest) {
+        thor.mawNew(newRequest);
     }
 
+    @PostMapping("/v1/submit/cancel")
+    public void cancelRequest(@RequestBody MawCancel cancelRequest) {
+        thor.mawCancel(cancelRequest);
+    }
 
 }

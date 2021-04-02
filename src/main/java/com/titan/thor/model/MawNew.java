@@ -1,12 +1,12 @@
 package com.titan.thor.model;
 
-public class MawOrder {
+public class MawNew {
 
     private String fixMessage;
 
-    public MawOrder() {}
+    public MawNew() {}
 
-    public MawOrder(String fixMessage) {
+    public MawNew(String fixMessage) {
         this.fixMessage = fixMessage;
     }
 
