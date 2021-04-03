@@ -2,11 +2,15 @@ package com.titan.thor.database;
 
 import com.titan.thor.database.converter.Converter;
 import com.titan.thor.database.repository.Pietro;
+import com.titan.thor.model.MawOrderRequest;
 import com.titan.thor.model.Order;
 import com.titan.thor.model.dao.OrderDAO;
 import lombok.extern.java.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Log
 @Service
@@ -17,13 +21,26 @@ public class Wanda {
 
     public Wanda() {}
 
-    public long addOrderToDatabase(Order order) {
+    public List<Order> getAllOrdersFromDatabase() {
+        List<Order> orderViewList = new ArrayList<>();
+        try {
+            List<OrderDAO> data = orderRepository.findAll();
+            Converter.dataToViewModelConverterForOrderList(orderViewList, data);
+        } catch (Exception e) {
+            System.out.println("Something went wrong!");
+        }
+        return orderViewList;
+    }
+
+    public long addOrderToDatabase(MawOrderRequest orderRequest) {
         OrderDAO orderDAO = new OrderDAO();
         try {
-            Converter.viewToDataModelConverter(order, orderDAO);
+            log.info("Added order into the database!");
+            Converter.viewToDataModelConverter(orderRequest, orderDAO);
             OrderDAO createdOrder = orderRepository.save(orderDAO);
             return createdOrder.getId();
         } catch (Exception e) {
+            log.info("Something went wrong adding the order...");
             return -1;
         }
     }

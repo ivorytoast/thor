@@ -37,4 +37,15 @@ public interface InfinityStone {
      */
     Order find(long orderID);
 
+    /**
+     * Cancels order from database. Unlike remove, which sets quantity to 0,
+     * it simply removes all the values from spp, ogp, cache and moves it to
+     * completed orders
+     *
+     * Throws exception if orderID not found
+     * @param orderID -- OrderID to be found in cache
+     * @return
+     */
+    Order cancel(long orderID);
+
 }

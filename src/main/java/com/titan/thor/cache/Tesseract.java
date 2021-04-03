@@ -151,6 +151,44 @@ public class Tesseract implements InfinityStone {
     }
 
     @Override
+    public Order cancel(long orderID) {
+        if (!jedis.exists(generateCacheKey(orderID))) {
+            log.info("Can't remove something that does not exist!");
+            return null;
+        }
+
+        Order order = find(orderID);
+
+        log.info("Starting to remove order from REDIS: " + order.toString());
+
+        double price = order.getPrice();
+        long quantityToRemove = order.getQuantityRemaining();
+
+        log.info("About to delete from cache: " + generateCacheKey(orderID));
+        jedis.del(generateCacheKey(orderID));
+
+        log.info("About to delete from OGP: " + generateOrdersGroupedByPriceKey(order));
+        jedis.del(generateOrdersGroupedByPriceKey(order));
+
+        log.info("Adjusting quantity in SPP: " + generateOrdersGroupedByPriceKey(order));
+        jedis.decrBy(generateSharesPerPriceKey(price), quantityToRemove);
+
+        if (jedis.get(generateSharesPerPriceKey(price)).equals("0")) {
+            jedis.del(generateSharesPerPriceKey(price));
+        }
+
+        log.info("Adjusting amount available: " + generateAmountAvailableKey());
+        jedis.decrBy(generateAmountAvailableKey(), quantityToRemove);
+
+        log.info("Adding a new order to completed orders: " + generateCompletedOrdersKey());
+        jedis.rpush(generateCompletedOrdersKey(), String.valueOf(orderID));
+
+        log.info("Finished removing order from REDIS: " + order.toString());
+
+        return order;
+    }
+
+    @Override
     public Order find(long orderID) {
         if (!jedis.exists(generateCacheKey(orderID))) {
             log.info("Can't remove something that does not exist!");
@@ -205,6 +243,10 @@ public class Tesseract implements InfinityStone {
     }
 
     public long getAmountAvailable() {
+        String aaString = jedis.get(generateAmountAvailableKey());
+        if (aaString.isEmpty()) {
+            return 0;
+        }
         return Long.parseLong(jedis.get(generateAmountAvailableKey()));
     }
 

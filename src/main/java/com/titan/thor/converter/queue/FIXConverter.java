@@ -1,5 +1,6 @@
 package com.titan.thor.converter.queue;
 
+import com.titan.thor.model.MawOrderRequest;
 import com.titan.thor.model.Order;
 
 public class FIXConverter {
@@ -12,6 +13,16 @@ public class FIXConverter {
         String price = values[4].substring(1);
         String side = values[5].substring(1);
         return new Order(null, userID, symbol, Long.parseLong(quantity), Double.parseDouble(price), side);
+    }
+
+    public static MawOrderRequest convertFixToOrderRequest(String fix) {
+        String[] values = fix.split("\\?\\d");
+        String userID = values[1].substring(1);
+        String symbol = values[2].substring(1);
+        String quantity = values[3].substring(1);
+        String price = values[4].substring(1);
+        String side = values[5].substring(1);
+        return new MawOrderRequest(userID, symbol, Long.parseLong(quantity), Double.parseDouble(price), side);
     }
 
     public static String convertOrderToFix(Order order) {

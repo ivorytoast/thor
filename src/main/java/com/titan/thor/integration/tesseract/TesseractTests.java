@@ -22,8 +22,15 @@ public class TesseractTests {
 
     public TesseractTests() {}
 
-    public String quantity_Test() {
+    private void reset() {
         jedis.flushDB();
+        numberOfKeysCounter = 1;
+        amountAvailableCounter = 0;
+        sppCounter = new HashMap<>();
+    }
+
+    public String quantity_Test() {
+        reset();
 
         tesseract.add(TesseractObjects.orderOne);
         tesseract.add(TesseractObjects.orderTwo);
@@ -54,7 +61,7 @@ public class TesseractTests {
     }
 
     public String test_Add() {
-        jedis.flushDB();
+        reset();
 
         tesseract.add(TesseractObjects.orderOne);
 

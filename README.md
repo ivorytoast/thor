@@ -11,3 +11,9 @@
 * docker build -t ivorytoast3853/thor .
 * docker push ivorytoast3853/thor
 * docker run ivorytoast3853/thor
+
+* docker-compose -f docker-compose.yml up --build -d
+* docker-compose down
+
+## Useful Info
+https://github.com/docker-library/mysql/issues/275

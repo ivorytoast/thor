@@ -24,10 +24,9 @@ public class Engine {
     }
 
     /*
-    TODO: Make symbols a set in REDIS
+    TODO: Symbol should be validated in Loki
      */
     public void addNewOrder(Order order) {
-        // This will be ported over to REDIS soon...
         Symbol symbol = new Symbol(order.getSymbol());
 
         if (order.getSide().equals("buy")) {
@@ -39,11 +38,7 @@ public class Engine {
         log.info("Added " + order.toString() + " to REDIS");
     }
 
-    /*
-    TODO: Make it so for cancels it does not adjust quantity to 0 since it technically hasn't matched
-     */
     public void cancelOrder(Order order) {
-        // This will be ported over to REDIS soon...
         Symbol symbol = new Symbol(order.getSymbol());
 
         if (order.getSide().equals("buy")) {

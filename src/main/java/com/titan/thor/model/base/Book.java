@@ -18,9 +18,7 @@ public abstract class Book {
     }
 
     public void addOrder(Order order) {
-        log.info("Adding order");
         this.tesseract.add(order);
-        log.info("Added order");
     }
 
     public Order removeOrder(long orderID) {
@@ -29,6 +27,10 @@ public abstract class Book {
 
     public void updateOrder(Order order, long quantityToChange) {
         this.tesseract.update(order.getId(), quantityToChange);
+    }
+
+    public void cancelOrder(long orderID) {
+        this.tesseract.cancel(orderID);
     }
 
     public Order findOrder(long orderID) {
