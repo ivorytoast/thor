@@ -5,15 +5,12 @@ import com.titan.thor.model.Order;
 import com.titan.thor.model.base.Book;
 import com.titan.thor.model.children.MatchOutput;
 import com.titan.thor.model.children.Symbol;
-import com.titan.thor.model.dao.OrderDAO;
 import lombok.extern.java.Log;
 
 import java.util.*;
 
 @Log
 public class Engine {
-
-    boolean debug = true;
 
     Wanda wanda;
     Map<String, Symbol> symbols;
@@ -23,182 +20,106 @@ public class Engine {
         symbols = new HashMap<>();
     }
 
-    /*
-    TODO: Symbol should be validated in Loki
-     */
-    public void addNewOrder(Order order) {
-        Symbol symbol = new Symbol(order.getSymbol());
-
-        if (order.getSide().equals("buy")) {
-            symbol.bids.addOrder(order);
-        } else {
-            symbol.asks.addOrder(order);
-        }
-
-        log.info("Added " + order.toString() + " to REDIS");
-    }
-
+    // TODO: Next
     public void cancelOrder(Order order) {
         Symbol symbol = new Symbol(order.getSymbol());
 
         if (order.getSide().equals("buy")) {
-            symbol.bids.removeOrder(order.getId());
+            symbol.bids.removeMatchedOrder(order.getId());
         } else {
-            symbol.asks.removeOrder(order.getId());
+            symbol.asks.removeMatchedOrder(order.getId());
         }
 
         log.info("Cancelled " + order.getId() + " in REDIS");
     }
 
-    public List<Order> acceptOrder(Order order) {
-        List<Order> allAffectedOrders = new ArrayList<>();
+    public List<Order> execute(Order orderToExecute, Book bookToAdd, Book bookToMatch) {
+        List<Order> ordersToUpdateInDatabase = new ArrayList<>();
 
-        // Add Symbol to REDIS (Set of available symbols)
-        Symbol symbol = new Symbol(order.getSymbol());
+        bookToAdd.addOrder(orderToExecute);
 
-        long originalQuantity = order.getQuantityRemaining();
-        if (order.getSide().equals("buy")) {
-            // Add
-            symbol.bids.addOrder(order);
+        MatchOutput matchOutput = matchOrder(orderToExecute, bookToMatch);
 
-            // Match
-            MatchOutput matchOutput = matchOrder(order, symbol.asks);
-
-            // Remove/Update Incoming Order
-            Order matchedIncomingOrder = matchOutput.getModifiedOrder();
-
-            if (matchOutput.isFullyMatch()) {
-                if (debug) System.out.println("The buy order was fully matched!");
-                symbol.bids.removeOrder(matchedIncomingOrder.getId());
-            } else {
-                if (debug) System.out.println("The buy order was partially matched!");
-                symbol.bids.updateOrder(matchedIncomingOrder, originalQuantity - order.getQuantityRemaining());
-            }
-
-            allAffectedOrders.add(matchedIncomingOrder);
-
-            // Remove/Update Existing Orders
-            for (long orderID : matchOutput.getExistingOrdersToRemove()) {
-                log.info("Removing the following orderID: " + orderID);
-                Order removedOrder = symbol.asks.tesseract.remove(orderID);
-                allAffectedOrders.add(removedOrder);
-            }
-            for (long orderID : matchOutput.getExistingOrdersToUpdate()) {
-                log.info("Getting the following orderID to update (in asks): " + orderID);
-                Order updatedOrder = symbol.asks.tesseract.find(orderID);
-                allAffectedOrders.add(updatedOrder);
-            }
+        if (matchOutput.isFullyMatch()) {
+            System.out.println("Order was fully matched");
+            bookToAdd.removeMatchedOrder(orderToExecute.getId());
+            orderToExecute.setQuantityRemaining(0L);
+            ordersToUpdateInDatabase.add(orderToExecute);
         } else {
-            // Add
-            symbol.asks.addOrder(order);
-
-            // Match
-            MatchOutput matchOutput = matchOrder(order, symbol.bids);
-
-            // Remove/Update Incoming Order
-            Order matchedIncomingOrder = matchOutput.getModifiedOrder();
-
-            if (matchOutput.isFullyMatch()) {
-                if (debug) System.out.println("The buy order was fully matched!");
-                symbol.asks.removeOrder(matchedIncomingOrder.getId());
-            } else {
-                if (debug) System.out.println("The buy order was partially matched!");
-                symbol.asks.updateOrder(matchedIncomingOrder, originalQuantity - order.getQuantityRemaining());
-            }
-
-            allAffectedOrders.add(matchedIncomingOrder);
-
-            // Remove/Update Existing Orders
-            for (long orderID : matchOutput.getExistingOrdersToRemove()) {
-                log.info("Removing the following orderID: " + orderID);
-                Order removedOrder = symbol.bids.tesseract.remove(orderID);
-                allAffectedOrders.add(removedOrder);
-            }
-            for (long orderID : matchOutput.getExistingOrdersToUpdate()) {
-                log.info("Getting the following orderID to update (in bids): " + orderID);
-                Order updatedOrder = symbol.bids.tesseract.find(orderID);
-                allAffectedOrders.add(updatedOrder);
-            }
+            log.info("Order was not matched due to insufficient quantity in cache");
         }
-        return allAffectedOrders;
+
+        for (long orderID : matchOutput.getExistingOrdersToRemove()) {
+            log.info("OrderID to be logically removed in database: " + orderID);
+            Order removedOrder = bookToMatch.tesseract.removeMatchedOrder(orderID);
+            ordersToUpdateInDatabase.add(removedOrder);
+        }
+        for (long orderID : matchOutput.getExistingOrdersToUpdate()) {
+            log.info("OrderID to be updated in database: " + orderID);
+            Order updatedOrder = bookToMatch.tesseract.find(orderID);
+            ordersToUpdateInDatabase.add(updatedOrder);
+        }
+
+        return ordersToUpdateInDatabase;
     }
 
-    /*
-    TODO: Fix this method -- implement the redis equivalent to these. Probably sorted sets
-     */
-    private MatchOutput matchOrder(Order incomingOrder, Book book) {
-        Set<Double> bestPricesToFillWith = findTheBestPricesToFillWith(incomingOrder, book);
-        Set<Long> existingOrdersToRemove = new HashSet<>();
-        Set<Long> existingOrdersToUpdate = new HashSet<>();
-        for (double price : bestPricesToFillWith) {
-            for (Order existingOrder : new ArrayList<Order>()) {
-                if (incomingOrder.getQuantity() == 0) {
-                    break;
-                }
-                if (incomingOrder.getQuantity().equals(existingOrder.getQuantityRemaining())) {
-                    existingOrdersToRemove.add(existingOrder.getId());
+    public List<Order> acceptOrder(Order incomingOrder) {
+        Symbol symbol = new Symbol(incomingOrder.getSymbol());
 
-                    return new MatchOutput(true, incomingOrder, existingOrdersToRemove, existingOrdersToUpdate);
-                } else if (incomingOrder.getQuantityRemaining() < existingOrder.getQuantityRemaining()) {
+        if (incomingOrder.getSide().equals("buy")) {
+            return execute(incomingOrder, symbol.bids, symbol.asks);
+        } else {
+            return execute(incomingOrder, symbol.asks, symbol.bids);
+        }
+    }
+
+    private MatchOutput matchOrder(Order incomingOrder, Book book) {
+        Set<Long> cacheOrdersToRemove = new HashSet<>();
+        Set<Long> cacheOrdersToUpdate = new HashSet<>();
+
+        LinkedList<Double> bestPricesToFillWith = findTheBestPricesToFillWith(incomingOrder, book);
+        if (bestPricesToFillWith.size() == 0) {
+            log.severe("There was not enough initial quantity to fully match the request...");
+            return new MatchOutput(false, cacheOrdersToRemove, cacheOrdersToUpdate);
+        }
+
+        long quantityTracker = incomingOrder.getQuantityRemaining();
+        for (double price : bestPricesToFillWith) {
+            log.info("Number of orders for price: " + price + " -> " + book.tesseract.getOGPOrdersForPrice(price));
+            for (Order cacheOrder : book.tesseract.getOGPOrdersForPrice(price)) {
+                log.info("Incoming order: " + incomingOrder.toString());
+                log.info("Cache order: " + cacheOrder.toString());
+                if (incomingOrder.getQuantity().equals(cacheOrder.getQuantityRemaining())) {
+                    cacheOrdersToRemove.add(cacheOrder.getId());
+
+                    return new MatchOutput(true, cacheOrdersToRemove, cacheOrdersToUpdate);
+                } else if (incomingOrder.getQuantityRemaining() < cacheOrder.getQuantityRemaining()) {
                     long quantityChanging = incomingOrder.getQuantityRemaining();
 
-                    existingOrder.setQuantityRemaining(existingOrder.getQuantityRemaining() - quantityChanging);
-                    book.tesseract.update(existingOrder.getId(), quantityChanging);
-                    existingOrdersToUpdate.add(existingOrder.getId());
+                    book.tesseract.update(cacheOrder.getId(), quantityChanging);
 
-                    return new MatchOutput(true, incomingOrder, existingOrdersToRemove, existingOrdersToUpdate);
+                    cacheOrdersToUpdate.add(cacheOrder.getId());
+
+                    return new MatchOutput(true, cacheOrdersToRemove, cacheOrdersToUpdate);
                 } else {
-                    long quantityChanging = existingOrder.getQuantityRemaining();
+                    long quantityChanging = cacheOrder.getQuantityRemaining();
 
-                    existingOrdersToRemove.add(existingOrder.getId());
-                    incomingOrder.setQuantityRemaining(incomingOrder.getQuantityRemaining() - quantityChanging);
+                    cacheOrdersToRemove.add(cacheOrder.getId());
+                    quantityTracker -= quantityChanging;
+
+                    if (quantityTracker == 0) {
+                        log.info("The quantity got to 0. Order was matched");
+                        return new MatchOutput(true, cacheOrdersToRemove, cacheOrdersToUpdate);
+                    }
                 }
             }
         }
-        return new MatchOutput(false, incomingOrder, existingOrdersToRemove, existingOrdersToUpdate);
+        log.severe("Something went wrong, the order did not fully match...");
+        return new MatchOutput(false, cacheOrdersToRemove, cacheOrdersToUpdate);
     }
 
-    private Set<Double> findTheBestPricesToFillWith(Order order, Book book) {
-        long start = System.nanoTime();
-        if (book.tesseract.getAmountAvailable() < order.getQuantity()) {
-            return new HashSet<>();
-        } else {
-            long toBeFilled = order.getQuantity();
-            Set<Double> prices = new HashSet<>();
-//            for (Map.Entry<Double, Long> entry : book.tesseract.getNumberOfSharesPerPrice().entrySet()) {
-//                if (toBeFilled == 0) return prices;
-//                if (entry.getValue() > 0) {
-//                    if (toBeFilled <= entry.getValue()) {
-//                        toBeFilled = 0;
-//                    } else {
-//                        toBeFilled -= entry.getValue();
-//                    }
-//                    prices.add(entry.getKey());
-//                }
-//            }
-            long end = System.nanoTime();
-            double seconds = (double) (end - start) / 1_000_000_000.0;
-            if (order.getId() > 999_999 && order.getId() % 100_000 == 0) {
-                System.out.println("Finding best prices to fill with time: " + seconds);
-            }
-            return prices;
-        }
-    }
-
-    public String updateOrder(Order order) {
-        log.info("Searching for this orderID in the database: " + order.getId());
-        OrderDAO orderDAO = wanda.getOneOrderFromDatabase(order.getId());
-        if (orderDAO == null) {
-            return "Could not update order for OrderID of: " + order.getId();
-        }
-        log.info("Database data: " + orderDAO.toString());
-        orderDAO.setQuantity(order.getQuantity());
-        orderDAO.setSymbol(order.getSymbol());
-        orderDAO.setPrice(order.getPrice());
-        orderDAO.setQuantityRemaining(order.getQuantityRemaining());
-        log.info("Updated order data: " + orderDAO.toString());
-        wanda.updateOrderInDatabase(orderDAO);
-        return "Updated order!";
+    private LinkedList<Double> findTheBestPricesToFillWith(Order order, Book book) {
+        return (book.tesseract.getAmountAvailable() < order.getQuantity()) ? new LinkedList<>() : book.tesseract.getPrices();
     }
 
 }

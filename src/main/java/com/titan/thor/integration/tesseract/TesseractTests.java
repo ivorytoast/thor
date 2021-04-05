@@ -13,6 +13,8 @@ import java.util.Set;
 @Log
 public class TesseractTests {
 
+    // TODO: Fix these tests next...aa/co/cache should all be the same. Just ogp/spp should be different
+
     private final Jedis jedis = new Jedis("redis");
     private final Tesseract tesseract = new Tesseract(BookType.BID, "spx");
 
@@ -35,17 +37,17 @@ public class TesseractTests {
         tesseract.add(TesseractObjects.orderOne);
         tesseract.add(TesseractObjects.orderTwo);
         tesseract.add(TesseractObjects.orderThree);
-        tesseract.remove(3L);
+        tesseract.removeMatchedOrder(3L);
         tesseract.add(TesseractObjects.orderFour);
         tesseract.add(TesseractObjects.orderFive);
-        tesseract.remove(4L);
-        tesseract.remove(1L);
+        tesseract.removeMatchedOrder(4L);
+        tesseract.removeMatchedOrder(1L);
         tesseract.find(2L);
-        tesseract.remove(2L);
+        tesseract.removeMatchedOrder(2L);
         tesseract.add(TesseractObjects.orderSix);
-        tesseract.remove(6L);
+        tesseract.removeMatchedOrder(6L);
         tesseract.find(5L);
-        tesseract.remove(5L);
+        tesseract.removeMatchedOrder(5L);
 
         Set<String> keys = jedis.keys("*");
         if (keys.size() != 2) return "There should only be 2 left in the cache. There are: " + keys.size();
@@ -73,7 +75,7 @@ public class TesseractTests {
         String twoOutput = testAddValues(TesseractObjects.orderTwo, "spx:bids:aa", "spx:bids:cache:2", "spx:bids:spp:2.2", "spx:bids:ogp:2.2:2");
         if (!twoOutput.equals("")) return twoOutput;
 
-        tesseract.remove(1);
+        tesseract.removeMatchedOrder(1);
 
         Set<String> keys = jedis.keys("*");
         if (keys.size() != 5) return "There should only be 5 keys in the cache. There are: " + keys.size();
@@ -99,7 +101,7 @@ public class TesseractTests {
         long coLength = jedis.llen("spx:bids:co");
         if (coLength != 1L) return "Order was not added to completed orders list. The length of completed orders is: " + coLength;
 
-        tesseract.remove(2);
+        tesseract.removeMatchedOrder(2);
 
         Set<String> keysTwo = jedis.keys("*");
         if (keysTwo.size() != 2) return "There should only be 2 keys in the cache. There are: " + keysTwo.size();

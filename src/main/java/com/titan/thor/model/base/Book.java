@@ -21,16 +21,16 @@ public abstract class Book {
         this.tesseract.add(order);
     }
 
-    public Order removeOrder(long orderID) {
-        return this.tesseract.remove(orderID);
+    public Order removeMatchedOrder(long orderID) {
+        return this.tesseract.removeMatchedOrder(orderID);
     }
 
-    public void updateOrder(Order order, long quantityToChange) {
-        this.tesseract.update(order.getId(), quantityToChange);
+    public void updateOrder(long orderID, long quantityToChange) {
+        this.tesseract.update(orderID, quantityToChange);
     }
 
     public void cancelOrder(long orderID) {
-        this.tesseract.cancel(orderID);
+        this.tesseract.removeCancelledOrder(orderID);
     }
 
     public Order findOrder(long orderID) {

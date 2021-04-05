@@ -17,33 +17,15 @@ services:
 
   thor:
     restart: always
-    image: ivorytoast3853/thor:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db2:3306/titan?createDatabaseIfNotExist=true
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: gt
     ports:
       - "8085:8084"
-
-  thor2:
-    restart: always
-    image: ivorytoast3853/thor:latest
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db2:3306/titan?createDatabaseIfNotExist=true
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: gt
-    ports:
-      - "8087:8084"
-
-  thor3:
-    restart: always
-    image: ivorytoast3853/thor:latest
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db2:3306/titan?createDatabaseIfNotExist=true
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: gt
-    ports:
-      - "8088:8084"
 
   redis:
     image: "redis:alpine"

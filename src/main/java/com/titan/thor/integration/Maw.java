@@ -35,12 +35,6 @@ public class Maw {
         return tesseractTests.quantity_Test();
     }
 
-    @PostMapping("/v1/submit/new/fix")
-    public void newRequest(@RequestBody MawNew newRequest) {
-        thor.mawNewFix(newRequest);
-    }
-
-    @CrossOrigin
     @PostMapping("/v1/submit/new/order")
     public void newOrderRequest(@RequestBody MawOrderRequest orderRequest) {
         thor.mawNewOrder(orderRequest);

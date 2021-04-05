@@ -10,25 +10,11 @@ import java.util.*;
 @Log
 public class Tesseract implements InfinityStone {
 
-    // underlier_book_variable_{firstLevelKey}_{secondLevelKey}  {} = Optional
-
-    private String underlier;
-    private String bookType;
+    private final String underlier;
+    private final String bookType;
 
     private final Jedis jedis;
 
-    // These 4 must always be affected together
-//    private double amountAvailable;
-//    private TreeMap<Double, Long> numberOfSharesPerPrice;
-//    private Map<Double, Map<Long, Order>> ordersGroupedByPrice;
-//    private Map<Long, Order> cache;
-
-    // This one may not
-//    private List<Order> completedOrders;
-
-    /**
-     * TODO: Have to make number of shares per price a sorted set in REDIS so I can actually get the best prices
-     */
     public Tesseract(BookType bookType, String underlier) {
         this.underlier = underlier;
 
@@ -41,164 +27,91 @@ public class Tesseract implements InfinityStone {
         jedis = new Jedis("redis");
     }
 
-    // spx:bids:aa (Double)
-    public String generateAmountAvailableKey() {
-        return getUnderlier() + ":" + getBookType() + ":" + "aa";
-    }
-
-    // spx:bids:spp:100.0 (Long)
-    public String generateSharesPerPriceKey(double price) {
-        return getUnderlier() + ":" + getBookType() + ":spp:" + price;
-    }
-
-    // spx:bids:ogp:100.0:42 (OrderView)
-    public String generateOrdersGroupedByPriceKey(Order order) {
-        return getUnderlier() + ":" + getBookType() + ":ogp:" + order.getPrice() + ":" + order.getId();
-    }
-
-    // spx:bids:cache:42 (OrderView)
-    public String generateCacheKey(Long orderID) {
-        return getUnderlier() + ":" + getBookType() + ":cache:" + orderID;
-    }
-
-    // spx:bids:co (List<OrderView>)
-    public String generateCompletedOrdersKey() {
-        return getUnderlier() + ":" + getBookType() + ":" + "co";
-    }
-
-    public Map<String, String> orderViewToMap(Order order) {
-        Map<String, String> map = new HashMap<>();
-        map.put("id", order.getId().toString());
-        map.put("userID", order.getUserID());
-        map.put("symbol", order.getSymbol());
-        map.put("quantity", order.getQuantity().toString());
-        map.put("price", order.getPrice().toString());
-        map.put("side", order.getSide());
-        map.put("quantityRemaining", order.getQuantityRemaining().toString());
-        return map;
-    }
-
     @Override
     public void add(Order order) {
-        log.info("Starting to add order to REDIS: " + order.toString());
         long id = order.getId();
         double price = order.getPrice();
         long quantity = order.getQuantity();
 
-        if (jedis.exists(generateCacheKey(id))) {
-            log.info("Order already exists. Do not use add -- use update");
+        if (doesOrderExistInCache(id)) {
+            log.info("Order already exists in Cache. Do not use add -- use update");
             return;
         }
 
-        if (jedis.exists(generateOrdersGroupedByPriceKey(order))) {
-            log.info("Order already exists. Do not use add -- use update");
+        if (doesOrderExistInOGP(id, price)) {
+            log.info("Order already exists in OGP. Do not use add -- use update");
             return;
         }
 
-        log.info("Adding order to cache");
-        jedis.hmset(generateCacheKey(id), orderViewToMap(order));
-
-        log.info("Adding additional shares to spp");
-        jedis.incrBy(generateSharesPerPriceKey(price), quantity);
-
-        log.info("Adding order to ogp");
-        jedis.hmset(generateOrdersGroupedByPriceKey(order), orderViewToMap(order));
-
-        log.info("Adding additional amount to amount available");
-        jedis.incrBy(generateAmountAvailableKey(), quantity);
-
-        log.info("Finished adding order to REDIS: " + order.toString());
+        cacheAdd(order);
+        sppIncr(price, quantity);
+        ogpAdd(price, id);
+        aaIncrBy(quantity);
     }
 
     @Override
-    public Order remove(long orderID) {
-        if (!jedis.exists(generateCacheKey(orderID))) {
+    public Order removeMatchedOrder(long orderID) {
+        if (!doesOrderExistInCache(orderID)) {
             log.info("Can't remove something that does not exist!");
             return null;
         }
 
         Order order = find(orderID);
-
-        log.info("Starting to remove order from REDIS: " + order.toString());
 
         double price = order.getPrice();
         long quantityToRemove = order.getQuantityRemaining();
 
         order.setQuantityRemaining(0L);
 
-        log.info("About to delete from cache: " + generateCacheKey(orderID));
-        jedis.del(generateCacheKey(orderID));
-
-        log.info("About to delete from OGP: " + generateOrdersGroupedByPriceKey(order));
-        jedis.del(generateOrdersGroupedByPriceKey(order));
-
-        log.info("Adjusting quantity in SPP: " + generateOrdersGroupedByPriceKey(order));
-        jedis.decrBy(generateSharesPerPriceKey(price), quantityToRemove);
-
-        if (jedis.get(generateSharesPerPriceKey(price)).equals("0")) {
-            jedis.del(generateSharesPerPriceKey(price));
-        }
-
-        log.info("Adjusting amount available: " + generateAmountAvailableKey());
-        jedis.decrBy(generateAmountAvailableKey(), quantityToRemove);
-
-        log.info("Adding a new order to completed orders: " + generateCompletedOrdersKey());
-        jedis.rpush(generateCompletedOrdersKey(), String.valueOf(orderID));
-
-        log.info("Finished removing order from REDIS: " + order.toString());
+        cacheRemove(orderID);
+        ogpRemove(price, orderID);
+        sppDecr(price, quantityToRemove);
+        aaDecrBy(quantityToRemove);
+        coAdd(orderID);
 
         return order;
     }
 
     @Override
-    public Order cancel(long orderID) {
-        if (!jedis.exists(generateCacheKey(orderID))) {
+    public Order removeCancelledOrder(long orderID) {
+        if (!doesOrderExistInCache(orderID)) {
             log.info("Can't remove something that does not exist!");
             return null;
         }
 
         Order order = find(orderID);
 
-        log.info("Starting to remove order from REDIS: " + order.toString());
-
         double price = order.getPrice();
         long quantityToRemove = order.getQuantityRemaining();
 
-        log.info("About to delete from cache: " + generateCacheKey(orderID));
-        jedis.del(generateCacheKey(orderID));
-
-        log.info("About to delete from OGP: " + generateOrdersGroupedByPriceKey(order));
-        jedis.del(generateOrdersGroupedByPriceKey(order));
-
-        log.info("Adjusting quantity in SPP: " + generateOrdersGroupedByPriceKey(order));
-        jedis.decrBy(generateSharesPerPriceKey(price), quantityToRemove);
-
-        if (jedis.get(generateSharesPerPriceKey(price)).equals("0")) {
-            jedis.del(generateSharesPerPriceKey(price));
-        }
-
-        log.info("Adjusting amount available: " + generateAmountAvailableKey());
-        jedis.decrBy(generateAmountAvailableKey(), quantityToRemove);
-
-        log.info("Adding a new order to completed orders: " + generateCompletedOrdersKey());
-        jedis.rpush(generateCompletedOrdersKey(), String.valueOf(orderID));
-
-        log.info("Finished removing order from REDIS: " + order.toString());
+        cacheRemove(orderID);
+        ogpRemove(price, orderID);
+        sppDecr(price, quantityToRemove);
+        aaDecrBy(quantityToRemove);
+        coAdd(orderID);
 
         return order;
     }
 
     @Override
+    public void update(long orderID, long quantityToRemove) {
+        Order cacheOrder = find(orderID);
+
+        double price = cacheOrder.getPrice();
+
+        sppDecr(price, quantityToRemove);
+        cacheUpdate(orderID, quantityToRemove);
+        aaDecrBy(quantityToRemove);
+    }
+
+    @Override
     public Order find(long orderID) {
-        if (!jedis.exists(generateCacheKey(orderID))) {
-            log.info("Can't remove something that does not exist!");
+        if (!doesOrderExistInCache(orderID)) {
+            log.info("Can't find something that does not exist!");
             return null;
         }
 
-        log.info("Starting to find the order in REDIS: " + orderID);
-
-        log.info("Trying to get the 'price' field of: " + generateCacheKey(orderID));
-        Map<String, String> values = jedis.hgetAll(generateCacheKey(orderID));
+        Map<String, String> values = jedis.hgetAll(cacheKey(orderID));
 
         if (values.isEmpty()) {
             log.info("There were no values returned from redis during the find method");
@@ -210,27 +123,115 @@ public class Tesseract implements InfinityStone {
         return convertHashToOrder(values);
     }
 
-    @Override
-    public void update(long orderID, long quantityChanged) {
-        Order cacheOrder = find(orderID);
-
-        double price = cacheOrder.getPrice();
-
-        log.info("Adjusting quantity in SPP for an update: " + generateOrdersGroupedByPriceKey(cacheOrder));
-        jedis.decrBy(generateSharesPerPriceKey(price), quantityChanged);
-
-        if (jedis.get(generateSharesPerPriceKey(price)).equals("0")) {
-            jedis.del(generateSharesPerPriceKey(price));
+    public LinkedList<Double> getPrices() {
+        LinkedList<Double> pricesToReturn = new LinkedList<>();
+        Set<String> prices;
+        if (bookType.equals("bids")) {
+            prices = jedis.zrevrange(pricesKey(), 0, -1);
+        } else {
+            prices = jedis.zrange(pricesKey(), 0, -1);
         }
+        for (String orderID : prices) {
+            pricesToReturn.add(Double.parseDouble(orderID));
+        }
+        return pricesToReturn;
+    }
+    public List<Order> getOGPOrdersForPrice(double price) {
+        List<Order> ordersToReturn = new ArrayList<>();
+        Set<String> orders = jedis.zrange(ogpKey(price), 0, -1);
+        for (String orderID : orders) {
+            ordersToReturn.add(find(Long.parseLong(orderID)));
+        }
+        return ordersToReturn;
+    }
+    public long getAmountAvailable() {
+        String value = jedis.get(aaKey());
+        return (jedis.get(aaKey()) == null) ? -1 : Long.parseLong(value);
+    }
 
-        log.info("Updating order in ogp for key: " + generateOrdersGroupedByPriceKey(cacheOrder));
-        jedis.hmset(generateOrdersGroupedByPriceKey(cacheOrder), orderViewToMap(cacheOrder));
+    private String aaKey() {
+        return getUnderlier() + ":" + getBookType() + ":" + "aa";
+    }
+    private void aaIncrBy(long quantity) {
+        jedis.incrBy(aaKey(), quantity);
+    }
+    private void aaDecrBy(long quantity) {
+        jedis.decrBy(aaKey(), quantity);
+    }
 
-        log.info("Updating order in cache for key: " + generateCacheKey(orderID));
-        jedis.hmset(generateCacheKey(orderID), orderViewToMap(cacheOrder));
+    private String pricesKey() {
+        return getUnderlier() + ":" + getBookType() + ":prices";
+    }
+    private void addToPrices(double price) {
+        jedis.zadd(pricesKey(), price, String.valueOf(price));
+    }
 
-        log.info("Adjusting amount available: " + generateAmountAvailableKey());
-        jedis.decrBy(generateAmountAvailableKey(), quantityChanged);
+    private String ogpKey(double price) {
+        return getUnderlier() + ":" + getBookType() + ":ogp:" + price;
+    }
+    private long ogpAdd(double price, long orderID) {
+        return jedis.zadd(ogpKey(price), orderID, String.valueOf(orderID));
+    }
+    private void ogpRemove(double price, long orderID) {
+        log.info("Removing OGP (1 of 3). The price value is: " + price);
+        log.info("Removing OGP (2 of 3). The key  is: " + ogpKey(price));
+        log.info("Removing OGP (3 of 3). The String value of orderID is: " + String.valueOf(orderID));
+        jedis.zrem(ogpKey(price), String.valueOf(orderID));
+    }
+
+    private String cacheKey(Long orderID) {
+        return getUnderlier() + ":" + getBookType() + ":cache:" + orderID;
+    }
+    private void cacheAdd(Order order) {
+        jedis.hmset(cacheKey(order.getId()), orderViewToMap(order));
+    }
+    private void cacheRemove(long orderID) {
+        jedis.del(cacheKey(orderID));
+    }
+    private void cacheUpdate(long orderID, long quantityToRemove) {
+        // Since there is no "hdecrBy" redis command, we need to increment by a negative number
+        jedis.hincrBy(cacheKey(orderID), "quantityRemaining", quantityToRemove * -1L);
+    }
+
+    private String coKey() {
+        return getUnderlier() + ":" + getBookType() + ":" + "co";
+    }
+    private void coAdd(long orderID) {
+        jedis.rpush(coKey(), String.valueOf(orderID));
+    }
+
+    private String sppKey(double price) {
+        return getUnderlier() + ":" + getBookType() + ":" + price;
+    }
+    private void sppIncr(double price, long quantity) {
+        jedis.incrBy(sppKey(price), quantity);
+        addToPrices(price);
+    }
+    private void sppDecr(double price, long quantity) {
+        jedis.decrBy(sppKey(price), quantity);
+        if (jedis.get(sppKey(price)).equals("0")) {
+            jedis.del(sppKey(price));
+            jedis.zrem(pricesKey(), String.valueOf(price));
+        }
+    }
+
+    private Map<String, String> orderViewToMap(Order order) {
+        Map<String, String> map = new HashMap<>();
+        map.put("id", order.getId().toString());
+        map.put("userID", order.getUserID());
+        map.put("symbol", order.getSymbol());
+        map.put("quantity", order.getQuantity().toString());
+        map.put("price", order.getPrice().toString());
+        map.put("side", order.getSide());
+        map.put("quantityRemaining", order.getQuantityRemaining().toString());
+        return map;
+    }
+    private boolean doesOrderExistInCache(long orderID) {
+        log.info("Trying to find orderID: " + orderID + " in the cache");
+        return jedis.exists(cacheKey(orderID));
+    }
+    private boolean doesOrderExistInOGP(long orderID, double price) {
+        return jedis.zrank(ogpKey(price), String.valueOf(orderID)) != null;
     }
 
     private Order convertHashToOrder(Map<String, String> values) {
@@ -242,28 +243,11 @@ public class Tesseract implements InfinityStone {
         return new Order(id, values.get("userID"), values.get("symbol"), quantity, price, values.get("side"), quantityRemaining);
     }
 
-    public long getAmountAvailable() {
-        String aaString = jedis.get(generateAmountAvailableKey());
-        if (aaString.isEmpty()) {
-            return 0;
-        }
-        return Long.parseLong(jedis.get(generateAmountAvailableKey()));
-    }
-
-    public String getUnderlier() {
+    private String getUnderlier() {
         return underlier;
     }
-
-    public void setUnderlier(String underlier) {
-        this.underlier = underlier;
-    }
-
-    public String getBookType() {
+    private String getBookType() {
         return bookType;
-    }
-
-    public void setBookType(String bookType) {
-        this.bookType = bookType;
     }
 
 }

@@ -11,13 +11,13 @@ public interface InfinityStone {
     void add(Order order);
 
     /**
-     * Removes element from cache
+     * Removes element from cache. Sets quantity to 0
      *
      * Throws exception if not found
      * @param orderID -- OrderID to be removed
      * @return
      */
-    Order remove(long orderID);
+    Order removeMatchedOrder(long orderID);
 
     /**
      * Updates element from cache with the details of input order
@@ -46,6 +46,6 @@ public interface InfinityStone {
      * @param orderID -- OrderID to be found in cache
      * @return
      */
-    Order cancel(long orderID);
+    Order removeCancelledOrder(long orderID);
 
 }

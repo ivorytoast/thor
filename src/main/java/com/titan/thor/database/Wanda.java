@@ -8,12 +8,14 @@ import com.titan.thor.model.dao.OrderDAO;
 import lombok.extern.java.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Log
 @Service
+@Transactional
 public class Wanda {
 
     @Autowired
@@ -64,6 +66,16 @@ public class Wanda {
 
     public void updateOrderInDatabase(OrderDAO orderDAO) {
         orderRepository.save(orderDAO);
+    }
+
+    public String updateOrderAfterMatch(Order order) {
+        OrderDAO orderDAO = orderRepository.getOne(order.getId());
+        orderDAO.setQuantityRemaining(order.getQuantityRemaining());
+        orderDAO.setCancelled(order.getCancelled());
+        log.info("Updated OrderDAO: " + orderDAO.toString());
+
+        orderRepository.save(orderDAO);
+        return "Updated order!";
     }
 
 }
