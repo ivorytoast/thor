@@ -20,8 +20,10 @@ https://svelte-8jol273uz-ivorytoast.vercel.app/
 * Nginix Load Balancer in front of Loki
 * Creating the Redis replication instances in docker compose file
 * Database needs to have replicas
+* Wanda is coupled with Thor. Therefore, Loki and Thor have repeating models to interact with Wanda. Wanda needs to have its own image and provide a client for Loki, Thor and any future service wanting to interact with the MySQL database
+* Heimdall created to provide a pub/sub service for all orders and related information
 
-## FIX Protocol
+## Titan's FIX Protocol
    * 8=FIX
    * 1=USER_ID
    * 2=SYMBOL
