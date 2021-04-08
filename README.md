@@ -7,14 +7,19 @@ https://svelte-8jol273uz-ivorytoast.vercel.app/
 ## Current State
 * Loki is built (Own docker image)
 * Thor is built (Own docker image)
+* Bifrost is built (Own docker image)
 * Redis images are connected
 * MySQL images are connected
-* Sample client is created (vercel repository)
-* ZeroMQ communication between Loki and Thor implemented
+* Sample client is created (vercel repository -- link above "Interact with Titan")
+* Bifrost runs ZeroMQ
+* Backend is running on Vultr cloud hosting
+* UI is running on Vercel cloud hosting
+* Backend has a self-signed certificate to allow "https"
 
 ## TODO
 * Nginix Load Balancer in front of Loki
 * Creating the Redis replication instances in docker compose file
+* Database needs to have replicas
 
 ## FIX Protocol
    * 8=FIX
