@@ -2,7 +2,7 @@
 https://svelte-8jol273uz-ivorytoast.vercel.app/
 
 # Architecture Diagram
-![Titan_Exchange_Diagram](https://user-images.githubusercontent.com/8243054/113965695-dcaf6600-97fb-11eb-9b2e-8365930a4d97.png)
+![Titan_Exchange_Diagram](https://user-images.githubusercontent.com/8243054/113966258-c229bc80-97fc-11eb-953b-449b9d8d2615.png)
 
 ## Current State
 * Loki is built (Own docker image)
