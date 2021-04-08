@@ -1,3 +1,21 @@
+# Interact With Titan
+https://svelte-8jol273uz-ivorytoast.vercel.app/
+
+# Architecture Diagram
+![Titan_Exchange_Diagram](https://user-images.githubusercontent.com/8243054/113965695-dcaf6600-97fb-11eb-9b2e-8365930a4d97.png)
+
+## Current State
+* Loki is built (Own docker image)
+* Thor is built (Own docker image)
+* Redis images are connected
+* MySQL images are connected
+* Sample client is created (vercel repository)
+* ZeroMQ communication between Loki and Thor implemented
+
+## TODO
+* Nginix Load Balancer in front of Loki
+* Creating the Redis replication instances in docker compose file
+
 ## FIX Protocol
    * 8=FIX
    * 1=USER_ID
