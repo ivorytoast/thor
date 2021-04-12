@@ -3,7 +3,7 @@ package com.titan.thor.config;
 import com.titan.thor.Engine;
 import com.titan.thor.Thor;
 import com.titan.thor.database.Wanda;
-import com.titan.thor.integration.tesseract.TesseractTests;
+import com.titan.thor.maw.tesseract.TesseractTests;
 import lombok.extern.java.Log;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;

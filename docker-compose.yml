@@ -1,7 +1,19 @@
 version: '3.3'
 
 services:
-  loki:
+  nginx:
+    build: ./src/main/java/com/titan/thor/nginx
+    ports:
+      - "8080:80"
+    depends_on:
+      - loki1
+      - loki3
+      - loki4
+      - thor7
+      - thor8
+      - thor9
+
+  loki4:
     restart: always
     image: ivorytoast3853/loki:latest
     environment:
@@ -11,11 +23,31 @@ services:
     ports:
       - "8084:8084"
 
+  loki3:
+    restart: always
+    image: ivorytoast3853/loki:latest
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db2:3306/titan?createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: gt
+    ports:
+      - "8083:8084"
+
+  loki1:
+    restart: always
+    image: ivorytoast3853/loki:latest
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db2:3306/titan?createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: gt
+    ports:
+      - "8081:8084"
+
   bifrost:
     restart: always
     image: ivorytoast3853/bifrost
 
-  thor:
+  thor7:
     restart: always
     build:
       context: .
@@ -25,7 +57,31 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: gt
     ports:
-      - "8085:8084"
+      - "8087:8084"
+
+  thor8:
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db2:3306/titan?createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: gt
+    ports:
+      - "8088:8084"
+
+  thor9:
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db2:3306/titan?createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: gt
+    ports:
+      - "8089:8084"
 
   redis:
     image: "redis:alpine"

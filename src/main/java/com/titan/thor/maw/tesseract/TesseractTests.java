@@ -1,4 +1,4 @@
-package com.titan.thor.integration.tesseract;
+package com.titan.thor.maw.tesseract;
 
 import com.titan.thor.cache.Tesseract;
 import com.titan.thor.model.Order;
