@@ -38,7 +38,7 @@ public class Wanda {
         OrderDAO orderDAO = new OrderDAO();
         try {
             log.info("Added order into the database!");
-            Converter.viewToDataModelConverter(orderRequest, orderDAO);
+            Converter.createNewDatabaseOrderFromMawRequest(orderRequest, orderDAO);
             OrderDAO createdOrder = orderRepository.save(orderDAO);
             return createdOrder.getId();
         } catch (Exception e) {

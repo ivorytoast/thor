@@ -9,25 +9,14 @@ import java.util.List;
 public class Converter {
 
     public static void dataToViewModelConverterForOrderList(List<Order> viewModel, List<OrderDAO> dataModel) {
-        for (int i=0; i<dataModel.size(); i++) {
+        for (int i = 0; i < dataModel.size(); i++) {
             Order orderView = new Order();
-            dataToViewModelConverter(orderView,dataModel.get(i));
+            createNewOrderFromDAO(orderView,dataModel.get(i));
             viewModel.add(orderView);
         }
     }
 
-    public static void dataToViewModelConverter(Order viewModel, OrderDAO dataModel) {
-        viewModel.setUserID(dataModel.getUserID());
-        viewModel.setId(dataModel.getId());
-        viewModel.setSymbol(dataModel.getSymbol());
-        viewModel.setQuantity(dataModel.getQuantity());
-        viewModel.setPrice(dataModel.getPrice());
-        viewModel.setSide(dataModel.getSide());
-        viewModel.setQuantityRemaining(dataModel.getQuantityRemaining());
-        viewModel.setCancelled(dataModel.isCancelled());
-    }
-
-    public static void viewToDataModelConverter(MawOrderRequest order, OrderDAO databaseOrder) {
+    public static void createNewDatabaseOrderFromMawRequest(MawOrderRequest order, OrderDAO databaseOrder) {
         databaseOrder.setUserID(order.getUserID());
         databaseOrder.setId(null);
         databaseOrder.setSymbol(order.getSymbol());
