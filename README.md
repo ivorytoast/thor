@@ -15,6 +15,7 @@ https://svelte-8jol273uz-ivorytoast.vercel.app/
 * Backend is running on Vultr cloud hosting
 * UI is running on Vercel cloud hosting
 * Backend has a self-signed certificate to allow "https"
+* Nginx Load Balancer in front of Loki and Thor
 
 ## TODO
 * Nginx Load Balancer in front of Loki
