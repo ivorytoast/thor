@@ -24,6 +24,11 @@ public class Maw {
         this.tesseractTests = tesseractTests;
     }
 
+    @GetMapping("/status")
+    public String getStatus() {
+        return "UP";
+    }
+
     @GetMapping("/v1/run/tesseract/add")
     public String addTest() {
         return tesseractTests.test_Add();
