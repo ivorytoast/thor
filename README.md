@@ -5,6 +5,7 @@ https://svelte-8jol273uz-ivorytoast.vercel.app/
 ![Titan_Exchange_Diagram](https://user-images.githubusercontent.com/8243054/113966258-c229bc80-97fc-11eb-953b-449b9d8d2615.png)
 
 ## Current State 
+* Nginx Load Balancer in front of Loki
 * Loki is built (Own docker image)
 * Thor is built (Own docker image)
 * Bifrost is built (Own docker image)
@@ -18,7 +19,6 @@ https://svelte-8jol273uz-ivorytoast.vercel.app/
 * Nginx Load Balancer in front of Loki and Thor
 
 ## TODO
-* Nginx Load Balancer in front of Loki
 * Creating the Redis replication instances in docker compose file
 * Database needs to have replicas
 * Wanda is coupled with Thor. Therefore, Loki and Thor have repeating models to interact with Wanda. Wanda needs to have its own image and provide a client for Loki, Thor and any future service wanting to interact with the MySQL database
